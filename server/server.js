@@ -1,18 +1,18 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import { connectDB } from "./config/db.js";
-import foodRouter from "./routes/foodRoute.js";
-import userRouter from "./routes/userRoute.js";
-import cartRouter from "./routes/cartRoute.js";
-import orderRouter from "./routes/orderRoute.js";
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const { connectDB } = require("./config/db");
+const foodRouter = require("./routes/foodRoute");
+const userRouter = require("./routes/userRoute");
+const cartRouter = require("./routes/cartRoute");
+const orderRouter = require("./routes/orderRoute");
 
 // configure environment
 dotenv.config();
 
 // app config
 const app = express();
-const port = process.env.PORT || 4000;
+const port = process.env.PORT;
 
 // middleware
 app.use(express.json());
@@ -24,7 +24,6 @@ connectDB();
 // api endpoints
 app.use("/api/food", foodRouter);
 app.use("/images", express.static("uploads"));
-
 app.use("/api/user", userRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/order", orderRouter);

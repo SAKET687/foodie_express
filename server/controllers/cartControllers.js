@@ -1,65 +1,103 @@
-import userModel from "../models/userModel.js";
 
-// add food items to user cart
+const userModel = require("../models/userModel");
+
+// Add food items to user cart
 const addToCart = async (req, res) => {
-    try {
+	try {
+		const userData = await userModel.findById(req.body.userId);
+		if (!userData) {
+			return res.json({
+				success: false,
+				message: "Oops! We couldn't find your account. 😢",
+			});
+		}
 
-        // let userData = await userModel.findOne({ _id: req.body.userId });
-        // let cartData = await userModel.findById({ _id: req.body.userId });
+		const cartData = userData.cartData || {};
 
-        let userData = await userModel.findById(req.body.userId);
-        let cartData = await userData.cartData;
-        if (!cartData[req.body.itemId]) {
-            cartData[req.body.itemId] = 1;
-        } else {
-            cartData[req.body.itemId] += 1;
-        }
-        await userModel.findByIdAndUpdate(userData._id, { cartData });
-        res.json({ success: true, message: "Item's added to cart." })
-    } catch (error) {
-        console.error(error);
-        res.json({ success: false, message: "Item isn't added, try again." })
-    }
+		if (!cartData[req.body.itemId]) {
+			cartData[req.body.itemId] = 1;
+		} else {
+			cartData[req.body.itemId] += 1;
+		}
+
+		await userModel.findByIdAndUpdate(userData._id, { cartData });
+
+		res.json({
+			success: true,
+			message: "Yay! 🎉 Your item was added to the cart successfully!",
+		});
+	} catch (error) {
+		console.error(error);
+		res.json({
+			success: false,
+			message: "Oh no! 😕 Something went wrong while adding your item. Try again soon!",
+		});
+	}
 };
 
-
-// remove food items from user cart
+// Remove food items from user cart
 const removeFromCart = async (req, res) => {
-    try {
-        let userData = await userModel.findById(req.body.userId);
-        let cartData = await userData.cartData;
-        if (cartData[req.body.itemId] > 0) {
-            cartData[req.body.itemId] -= 1;
-        }
-        await userModel.findByIdAndUpdate(userData._id, { cartData });
-        res.json({ success: true, message: "Item's removed from cart." })
-    } catch (error) {
-        console.error(error);
-        res.json({ success: false, message: "Item isn't removed, try again." })
-    }
+	try {
+		const userData = await userModel.findById(req.body.userId);
+		if (!userData) {
+			return res.json({
+				success: false,
+				message: "Oops! Can't find your user details. 🧐",
+			});
+		}
+
+		const cartData = userData.cartData || {};
+
+		if (cartData[req.body.itemId] && cartData[req.body.itemId] > 0) {
+			cartData[req.body.itemId] -= 1;
+
+			// Optional: Remove key if value becomes 0
+			if (cartData[req.body.itemId] === 0) {
+				delete cartData[req.body.itemId];
+			}
+		}
+
+		await userModel.findByIdAndUpdate(userData._id, { cartData });
+
+		res.json({
+			success: true,
+			message: "Poof! ✨ Your item was removed from the cart!",
+		});
+	} catch (error) {
+		console.error(error);
+		res.json({
+			success: false,
+			message: "Oopsie! 😬 Couldn't remove the item. Please try again later.",
+		});
+	}
 };
 
+// Get food items from user cart
+const getCart = async (req, res) => {
+	try {
+		const userData = await userModel.findById(req.body.userId);
+		if (!userData) {
+			return res.json({
+				success: false,
+				message: "Sorry, we couldn't find your account. 🚫",
+			});
+		}
 
-// get food items from user cart
-const getCart = async (request, response) => {
-    try {
-        // let userData = await userModel.findOne({ _id: request.body.userId });
-        // let userData = await userModel.findById(req.body.userId);
-        // let cartData = await userData.cartData;
+		const cartData = userData.cartData || {};
 
-        let userData = await userModel.findById(request.body.userId);
-        let cartData = await userData.cartData;
-
-        response.json({ success: true,  cartData, message: "Cart items loaded successfully." })
-    } catch (error) {
-        console.error(error);
-        response.json({ success: false, message: "Error to fetch cart details, try again." })
-    }
+		res.json({
+			success: true,
+			cartData,
+			message: "Here's your cart! 🍽️ Ready to checkout when you are!",
+		});
+	} catch (error) {
+		console.error(error);
+		res.json({
+			success: false,
+			message: "Hmm... 😔 We couldn't fetch your cart right now. Please try again soon.",
+		});
+	}
 };
 
-
-export { addToCart, removeFromCart, getCart };
-
-
-
+module.exports = { addToCart, removeFromCart, getCart };
 

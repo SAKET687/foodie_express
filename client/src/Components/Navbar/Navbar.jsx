@@ -1,5 +1,3 @@
-/* eslint-disable react/prop-types */
-/* eslint-disable no-unused-vars */
 import { useContext, useState } from "react";
 import { assets } from "../../assets/assets";
 import "./Navbar.css";
@@ -9,7 +7,7 @@ import { toast } from "react-toastify";
 
 const Navbar = ({ setShowLogin }) => {
 	const [Menu, SetMenu] = useState("home");
-	const { getTotalCartAmount, token, setToken } = useContext(StoreContext);
+	const { cartAmount, token, setToken } = useContext(StoreContext);
 
 	const navigate = useNavigate();
 
@@ -64,12 +62,10 @@ const Navbar = ({ setShowLogin }) => {
 					<img src={assets.search_icon} alt="search icon" />
 				</Link>
 				<div className="navbar-cart">
-					<Link to={`/${token}/cart`}>
+					<Link to={`/cart`}>
 						<img src={assets.basket_icon} alt="cart icon" />
 					</Link>
-					<div
-						className={getTotalCartAmount() === 0 ? "none" : "dot"}
-					></div>
+					<div className={cartAmount === 0 ? "none" : "dot"}></div> 
 				</div>
 				{!token ? (
 					<button onClick={() => setShowLogin(true)}>Sign in</button>
@@ -84,7 +80,7 @@ const Navbar = ({ setShowLogin }) => {
 							<ul className="navbar-profile-dropdown">
 								<li>
 									<img src={assets.bag_icon} alt="bag-icon" />{" "}
-									<Link to={`/${token}/orders`}>Orders</Link>
+									<Link to={`/orders`}>Orders</Link>
 								</li>
 								<hr />
 								<li>

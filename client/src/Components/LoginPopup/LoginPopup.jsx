@@ -1,8 +1,5 @@
-/* eslint-disable no-undef */
-/* eslint-disable react/no-unescaped-entities */
-/* eslint-disable react/prop-types */
-/* eslint-disable no-unused-vars */
-import React, { useContext, useEffect, useState } from "react";
+
+import { useContext, useState } from "react";
 import axios from "axios";
 import "./LoginPopup.css";
 import { assets } from "../../assets/assets";

@@ -1,6 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable no-unused-vars */
-import React, { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import "./Verify.css";
 import { StoreContext } from "../../Context/StoreContext";
@@ -19,13 +17,13 @@ const Verify = () => {
 		try {
 			const response = await axios.post(newUrl, { success, orderId });
 			if (response.data.success) {
-				navigate(`/${token}/orders`);
+				navigate(`/orders`);
 			} else {
-				navigate(`/${token}/home`);
+				navigate(`/home`);
 			}
 		} catch (error) {
 			console.error("Error verifying payment:", error);
-			navigate(`/${token}/home`);
+			navigate(`/home`);
 		} finally {
 			setLoading(false);
 		}
@@ -35,7 +33,7 @@ const Verify = () => {
 		if (success && orderId) {
 			verifyPayment();
 		} else {
-			navigate(`/${token}/home`);
+			navigate(`/home`);
 		}
 	}, [success, orderId, navigate, token, url]);
 

@@ -1,9 +1,9 @@
 {
-  "name": "backend",
+  "name": "foodie-express-backend-server",
   "version": "1.0.0",
   "description": "A Food Delivery WebApp",
   "main": "server.js",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "start": "node server.js",
     "server": "nodemon server.js"

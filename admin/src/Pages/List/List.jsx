@@ -1,7 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable react/prop-types */
-/* eslint-disable no-undef */
-/* eslint-disable no-unused-vars */
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -9,34 +5,6 @@ import "./List.css";
 
 const List = ({ url }) => {
 	const [list, setList] = useState([]);
-
-	// const [list, setList] = useState({
-	// 	name: "",
-	// 	description: "",a
-	// 	category: "Salad",
-	// 	price: "",
-	// 	image:""
-	// });
-
-	// const fetchList = async () => {
-	// 	const response = await axios.get(`${url}/api/food/list`);
-	// 	if (response.data.success) {
-	// 		setList(response.data.data);
-	// 		// toast.success(response.data.message);
-	// 	}
-	// 	// else {
-	// 	// 	toast.error(response.data.message);
-	// 	// }
-	// };
-
-	// useEffect(() => {
-	// 	fetchList();
-	// 	if (setList.length === 0) {
-	// 		toast.error("Error to fetch menu details. Please try again.");
-	// 	} else {
-	// 		toast.success("Menu details loaded successfully.");
-	// 	}
-	// }, []);
 
 	const fetchList = async () => {
 		try {

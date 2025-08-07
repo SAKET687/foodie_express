@@ -1,6 +1,10 @@
-import express from "express";
-import { addToCart, removeFromCart, getCart } from "../controllers/cartControllers.js";
-import authMiddleware from "../middleware/auth.js";
+const express = require("express");
+const {
+	addToCart,
+	removeFromCart,
+	getCart,
+} = require("../controllers/cartControllers");
+const authMiddleware = require("../middleware/auth");
 
 const cartRouter = express.Router();
 
@@ -8,4 +12,4 @@ cartRouter.post("/add", authMiddleware, addToCart);
 cartRouter.post("/remove", authMiddleware, removeFromCart);
 cartRouter.post("/get", authMiddleware, getCart);
 
-export default cartRouter;
+module.exports = cartRouter;

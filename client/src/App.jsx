@@ -31,10 +31,10 @@ const App = () => {
 					<Route path="*" element={<Home />} />
 					<Route path="/home" element={<Home />} />
 					<Route path="/search" element={<Search />} />
-					<Route path={`/${token}/cart`} element={<Cart />} />
-					<Route path={`/${token}/order-place`} element={<PlaceOrder />} />
+					<Route path={`/cart`} element={<Cart />} />
+					<Route path={`/order-place`} element={<PlaceOrder />} />
 					<Route path={`/verify`} element={<Verify />} />
-					<Route path={`/${token}/orders`} element={<Orders />} />
+					<Route path={`/orders`} element={<Orders />} />
 				</Routes>
 			</div>
 			<Footer />

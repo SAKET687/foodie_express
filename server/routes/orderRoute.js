@@ -1,6 +1,14 @@
-import express from "express";
-import authMiddleware from "../middleware/auth.js";
-import { adminOrders, orderUpdate, placeOrderUsingCOD, placeOrderUsingRazorpay, placeOrderUsingStripe, userOrders, verifyOrder } from "../controllers/orderController.js";
+const express = require("express");
+const authMiddleware = require("../middleware/auth");
+const {
+	adminOrders,
+	orderUpdate,
+	placeOrderUsingCOD,
+	placeOrderUsingRazorpay,
+	placeOrderUsingStripe,
+	userOrders,
+	verifyOrder,
+} = require("../controllers/orderController");
 
 const orderRouter = express.Router();
 
@@ -12,5 +20,4 @@ orderRouter.post("/get", authMiddleware, userOrders);
 orderRouter.post("/orders", adminOrders);
 orderRouter.post("/update", orderUpdate);
 
-
-export default orderRouter;
+module.exports = orderRouter;

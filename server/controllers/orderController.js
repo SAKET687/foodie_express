@@ -1,253 +1,239 @@
-import orderModel from "../models/orderModel.js";
-import userModel from "../models/userModel.js";
-import Stripe from "stripe";
-import Razorpay from "razorpay";
+const orderModel = require("../models/orderModel");
+const userModel = require("../models/userModel");
+const Razorpay = require("razorpay");
 
-// -----------------------------------------------------------------------
-// for placing user's order from frontend using razorpay
 
-const razorpayInstance = new Razorpay({
-	key_id: "rzp_test_ivr3iYTeVoiFCn",
-	key_secret: "Bv0ULdI3fmXHbpp9Z8dqLJrW",
-});
+const frontendUrl = process.env.FRONTEND_URL;
 
-const placeOrderUsingRazorpay = async (request, response) => {
+// Place order using Razorpay
+const placeOrderUsingRazorpay = async (req, res) => {
+
+	const razorpayInstance = new Razorpay({
+		key_id: process.env.RAZORPAY_KEY_ID,
+		key_secret: process.env.RAZORPAY_SECRET,
+	});
+
 	try {
 		const newOrder = new orderModel({
-			userId: request.body.userId,
-			items: request.body.items,
-			amount: request.body.amount,
-			address: request.body.address,
+			userId: req.body.userId,
+			items: req.body.items,
+			amount: req.body.amount,
+			address: req.body.address,
 		});
 
-		const custName =
-			request.body.address.firstName + request.body.address.lastName;
-		const custEmail = request.body.address.email;
-		const custNumber = request.body.address.phone;
+		const { firstName, lastName, email, phone } = req.body.address;
+		const custName = `${firstName} ${lastName}`;
 
 		await newOrder.save();
-		const totalAmount = request.body.amount * 100;
-		const razorpayOrder = razorpayInstance.orders.create({
+		await userModel.findByIdAndUpdate(req.body.userId, { cartData: {} });
+
+		const totalAmount = req.body.amount * 100;
+		const razorpayOrder = await razorpayInstance.orders.create({
 			amount: totalAmount,
 			currency: "INR",
 			receipt: `${newOrder._id}`,
 			payment_capture: 1,
 		});
 
-		response.json({
+		res.json({
 			success: true,
 			orderId: newOrder._id,
 			amount: totalAmount,
 			currency: "INR",
 			razorpayOrderId: razorpayOrder.id,
-			key_id: "rzp_test_ivr3iYTeVoiFCn",
+			key_id: razorpayInstance.key_id,
 			name: "Foodie Express",
-			description: "Order Description",
+			description: "A delicious journey awaits 🍱✨",
 			prefill: {
 				name: custName,
-				email: custEmail,
-				contact: custNumber,
+				email: email,
+				contact: phone,
 			},
 			notes: {
-				address: "Customer Address",
+				address: "Customer delivery location",
 			},
 		});
 	} catch (error) {
-		console.error("Error processing payment:", error);
-		response
-			.status(500)
-			.json({ success: false, message: "Payment not processed" });
+		console.error("Error processing Razorpay payment:", error);
+		res.status(500).json({
+			success: false,
+			message: "Oops! 🍔 Something went wrong while placing your order. Please try again!",
+		});
 	}
 };
 
-// -----------------------------------------------------------------------
+// Place order using Stripe
+const placeOrderUsingStripe = async (req, res) => {
 
-// -----------------------------------------------------------------------
-// for placing user's order from frontend using stripe
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-const placeOrderUsingStripe = async (request, response) => {
-	const frontendUrl = "http://localhost:5174";
+	const Stripe = require("stripe");
+	const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 	try {
 		const newOrder = new orderModel({
-			userId: request.body.userId,
-			items: request.body.items,
-			amount: request.body.amount,
-			address: request.body.address,
+			userId: req.body.userId,
+			items: req.body.items,
+			amount: req.body.amount,
+			address: req.body.address,
 		});
+
 		await newOrder.save();
-		await userModel.findByIdAndUpdate(request.body.userId, {
-			cartData: {},
-		});
-		const line_items = request.body.items.map((item) => ({
+		await userModel.findByIdAndUpdate(req.body.userId, { cartData: {} });
+
+		const line_items = req.body.items.map((item) => ({
 			price_data: {
 				currency: "inr",
-				product_data: {
-					name: item.name,
-				},
+				product_data: { name: item.name },
 				unit_amount: item.price * 100,
 			},
 			quantity: item.quantity,
 		}));
 
+		// Delivery Charges
 		line_items.push({
 			price_data: {
 				currency: "inr",
-				product_data: {
-					name: "Delivery Charges",
-				},
+				product_data: { name: "Delivery Charges" },
 				unit_amount: 50 * 100,
 			},
 			quantity: 1,
 		});
 
-		const { promo_code } = request.headers;
-
-		// if (promo_code) {
-
-		// }
-
 		const session = await stripe.checkout.sessions.create({
-			line_items: line_items,
+			line_items,
 			mode: "payment",
 			success_url: `${frontendUrl}/verify?success=true&orderId=${newOrder._id}`,
 			cancel_url: `${frontendUrl}/verify?success=false&orderId=${newOrder._id}`,
 		});
-		response.json({
+
+		res.json({
 			success: true,
 			session_url: session.url,
-			message: "Payment Processed,",
+			message: "Your payment session is ready! 🚀 Get ready to eat!",
 		});
 	} catch (error) {
-		console.log(error);
-		console.log("Payment execution failed.");
-		response.json({ success: false, message: error });
+		console.error("Stripe payment failed:", error);
+		res.json({
+			success: false,
+			message: "Yikes! 🥴 Couldn't start your payment. Try again later.",
+		});
 	}
 };
 
-// -----------------------------------------------------------------------
-
-// -----------------------------------------------------------------------
-// for placing user's order from frontend using cod
-
-const placeOrderUsingCOD = async (request, response) => {
-	const frontendUrl = "http://localhost:5174";
-	const { token } = request.headers;
+// Place order using COD
+const placeOrderUsingCOD = async (req, res) => {
+	const { token } = req.headers;
 
 	try {
 		const newOrder = new orderModel({
-			userId: request.body.userId,
-			items: request.body.items,
-			amount: request.body.amount,
-			address: request.body.address,
-		});
-		await newOrder.save();
-		await userModel.findByIdAndUpdate(request.body.userId, {
-			cartData: {},
-		});
-		await orderModel.findByIdAndUpdate(newOrder._id, {
+			userId: req.body.userId,
+			items: req.body.items,
+			amount: req.body.amount,
+			address: req.body.address,
 			payment_type: "Cash on Delivery",
 		});
-		const sessionUrl = `${frontendUrl}/${token}/orders`;
-		response.json({
+
+		await newOrder.save();
+		await userModel.findByIdAndUpdate(req.body.userId, { cartData: {} });
+
+		const sessionUrl = `${frontendUrl}/orders`;
+
+		res.json({
 			success: true,
 			session_url: sessionUrl,
-			message: "Order processed successfully.",
+			message: "Order placed with COD! 🛵 It’s on the way with love 💖",
 		});
 	} catch (error) {
-		console.error("Order execution failed:", error);
-		response.json({
+		console.error("COD order error:", error);
+		res.json({
 			success: false,
-			message: "Order processing failed. Please try again later.",
+			message: "Oops! 📦 Couldn't place your COD order. Try again, please.",
 		});
 	}
 };
 
-// -----------------------------------------------------------------------
-
-// -----------------------------------------------------------------------
-// verify order after payment
-const verifyOrder = async (request, response) => {
-	const { orderId, success } = request.body;
+// Verify order
+const verifyOrder = async (req, res) => {
+	const { orderId, success } = req.body;
 	try {
 		if (success === "true") {
 			await orderModel.findByIdAndUpdate(orderId, { payment: true });
-			response.json({ success: true, message: "Amount Paid" });
+			res.json({
+				success: true,
+				message: "Yay! 🎉 Payment successful and order confirmed!",
+			});
 		} else {
 			await orderModel.findByIdAndDelete(orderId);
-			response.json({ success: false, message: "Amount isn't Paid" });
+			res.json({
+				success: false,
+				message: "Oh no! 😢 Payment failed. Your order was canceled.",
+			});
 		}
 	} catch (error) {
-		console.log(error);
-		response.json({ success: false, message: error });
+		console.error("Order verification error:", error);
+		res.json({
+			success: false,
+			message: "Something went wrong while verifying your order. Please try again. 🙏",
+		});
 	}
 };
 
-// -----------------------------------------------------------------------
-
-// -----------------------------------------------------------------------
-// disply order list to users
-const userOrders = async (request, response) => {
+// Get user orders
+const userOrders = async (req, res) => {
 	try {
-		const orders = await orderModel.find({ userId: request.body.userId });
-		response.json({
+		const orders = await orderModel.find({ userId: req.body.userId });
+		res.json({
 			success: true,
 			data: orders,
-			message: "Orders fetched successfully.",
+			message: "Here's your tasty order history! 🧾🍕",
 		});
 	} catch (error) {
-		console.log("Error to fetch order details.");
-		console.log(error);
-		response.json({ success: false, message: error });
+		console.error("Fetching user orders failed:", error);
+		res.json({
+			success: false,
+			message: "Hmm... we couldn't fetch your orders right now. 😓",
+		});
 	}
 };
 
-// -----------------------------------------------------------------------
-
-// -----------------------------------------------------------------------
-// display orders to admin
-const adminOrders = async (request, response) => {
+// Get admin orders
+const adminOrders = async (req, res) => {
 	try {
 		const orders = await orderModel.find({});
-		response.json({
+		res.json({
 			success: true,
 			data: orders,
-			message: "Orders fetched successfully.",
+			message: "All orders loaded successfully! 📦 Admin dashboard updated.",
 		});
 	} catch (error) {
-		console.log("Error to fetch order details.");
-		console.log(error);
-		response.json({ success: false, message: error });
-	}
-};
-
-// -----------------------------------------------------------------------
-
-// -----------------------------------------------------------------------
-// update order status by admin dashboard
-const orderUpdate = async (request, response) => {
-	try {
-		await orderModel.findByIdAndUpdate(request.body.orderId, {
-			status: request.body.order_status,
-		});
-		response.json({
-			success: true,
-			message: "Order status updated successfully.",
-		});
-	} catch (error) {
-		console.log(error);
-		response.json({
+		console.error("Fetching admin orders failed:", error);
+		res.json({
 			success: false,
-			message: error,
+			message: "Oops! Couldn't load all orders. Please try again. 🛠️",
 		});
 	}
 };
 
-// -----------------------------------------------------------------------
+// Update order status
+const orderUpdate = async (req, res) => {
+	try {
+		await orderModel.findByIdAndUpdate(req.body.orderId, {
+			status: req.body.order_status,
+		});
+		res.json({
+			success: true,
+			message: "Order status updated! 🚚 Keep rollin'!",
+		});
+	} catch (error) {
+		console.error("Order status update error:", error);
+		res.json({
+			success: false,
+			message: "Uh oh! 😟 Couldn’t update the order status.",
+		});
+	}
+};
 
-export {
+// Exporting all functions
+module.exports = {
 	placeOrderUsingRazorpay,
 	placeOrderUsingStripe,
 	placeOrderUsingCOD,
